@@ -174,6 +174,24 @@ function reduceCell(ast: ASTExpression): Cell {
     throwError("Cannot reduce expression to a constant Cell", ast.ref);
 }
 
+function reduceStruct(ast: ASTExpression): Cell {
+    if (ast.kind === "op_static_call") {
+        if (ast.name === "cell") {
+            if (ast.args.length === 1) {
+                const str = reduceString(ast.args[0]);
+                let c: Cell;
+                try {
+                    c = Cell.fromBase64(str);
+                } catch (e) {
+                    throwError(`Invalid cell ${str}`, ast.ref);
+                }
+                return c;
+            }
+        }
+    }
+    throwError("Cannot reduce expression to a constant Cell", ast.ref);
+}
+
 export function resolveConstantValue(
     type: TypeRef,
     ast: ASTExpression | null,
@@ -220,6 +238,11 @@ export function resolveConstantValue(
     // Handle Cell
     if (type.name === "Cell") {
         return reduceCell(ast);
+    }
+
+    // Handle Cell
+    if (type.name === "Struct") {
+        return reduceStruct(ast);
     }
 
     throwError(`Expected constant value, got ${printTypeRef(type)}`, ast.ref);
